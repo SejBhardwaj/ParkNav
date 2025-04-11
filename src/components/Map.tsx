@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -137,7 +136,7 @@ const Map: React.FC<MapProps> = ({ onSpotSelect }) => {
         map.current.on('click', 'parking-spots-layer', (e) => {
           if (e.features && e.features.length > 0) {
             const feature = e.features[0];
-            const coordinates = feature.geometry.coordinates.slice();
+            const coordinates = feature.geometry.coordinates.slice() as [number, number];
             const properties = feature.properties;
             
             // Create popup

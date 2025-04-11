@@ -18,6 +18,15 @@ declare module 'mapbox-gl' {
         coordinates: number[];
         type: string;
       };
+      properties: {
+        [name: string]: any;
+      };
     }
+  }
+
+  interface GeoJSONFeature {
+    properties: {
+      [name: string]: any;
+    };
   }
 }
