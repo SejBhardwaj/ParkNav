@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
+import { motion } from 'framer-motion';
 
 const ThemeToggle: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -43,15 +44,29 @@ const ThemeToggle: React.FC = () => {
       variant="ghost" 
       size="icon" 
       onClick={toggleTheme}
-      className="transition-all duration-300 hover:bg-primary/10"
+      className="relative transition-all duration-300 hover:bg-primary/10"
       title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
       aria-label={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
     >
-      {isDarkMode ? (
-        <Sun className="h-5 w-5 text-yellow-400 animate-pulse" />
-      ) : (
-        <Moon className="h-5 w-5 animate-pulse" />
-      )}
+      <div className="relative">
+        {isDarkMode ? (
+          <motion.div
+            initial={{ scale: 0.5, opacity: 0, rotate: -30 }}
+            animate={{ scale: 1, opacity: 1, rotate: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Sun className="h-5 w-5 text-yellow-400" />
+          </motion.div>
+        ) : (
+          <motion.div
+            initial={{ scale: 0.5, opacity: 0, rotate: 30 }}
+            animate={{ scale: 1, opacity: 1, rotate: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Moon className="h-5 w-5" />
+          </motion.div>
+        )}
+      </div>
     </Button>
   );
 };

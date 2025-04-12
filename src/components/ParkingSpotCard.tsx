@@ -2,8 +2,25 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Navigation, MapPin, Clock, Star, Users, IndianRupee } from 'lucide-react';
+import { 
+  Navigation, 
+  MapPin, 
+  Clock, 
+  Star, 
+  Users, 
+  IndianRupee, 
+  Info,
+  Battery, 
+  ShieldCheck,
+  Home,
+  Umbrella
+} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from '@/components/ui/hover-card';
 
 interface ParkingSpotProps {
   spot: {
@@ -19,6 +36,14 @@ interface ParkingSpotProps {
     rating?: number;
     reviews?: number;
     etaMinutes?: number;
+    features?: string[];
+    securityCamera?: boolean;
+    isCovered?: boolean;
+    hasElectricCharging?: boolean;
+    discountAvailable?: boolean;
+    openTime?: string;
+    closeTime?: string;
+    operatedBy?: string;
   };
   onNavigate: (coordinates: [number, number]) => void;
   onReport: (id: string) => void;
@@ -40,6 +65,34 @@ const ParkingSpotCard: React.FC<ParkingSpotProps> = ({
     availabilityColor = 'bg-amber-500 dark:bg-amber-600';
   }
 
+  // Format type badge style based on type
+  const getTypeBadge = () => {
+    switch(spot.type) {
+      case 'premium':
+        return <Badge variant="default" className="ml-2 bg-purple-500 hover:bg-purple-600">Premium</Badge>;
+      case 'garage':
+        return <Badge variant="default" className="ml-2">Garage</Badge>;
+      case 'street':
+      default:
+        return <Badge variant="secondary" className="ml-2">Street</Badge>;
+    }
+  };
+
+  // Time formatting helper
+  const formatTime = (time?: string) => {
+    if (!time) return '';
+    const [hours, minutes] = time.split(':');
+    const hour = parseInt(hours);
+    return `${hour % 12 || 12}:${minutes} ${hour >= 12 ? 'PM' : 'AM'}`;
+  };
+
+  // Format opening hours
+  const getOpeningHours = () => {
+    if (!spot.openTime || !spot.closeTime) return 'Hours not specified';
+    if (spot.openTime === '00:00' && spot.closeTime === '23:59') return '24 hours';
+    return `${formatTime(spot.openTime)} - ${formatTime(spot.closeTime)}`;
+  };
+
   return (
     <Card className="w-full shadow-md mb-4 overflow-hidden transition-all duration-300 hover:shadow-lg dark:bg-gray-800 dark:border-gray-700 animate-fade-in">
       <CardHeader className="pb-2">
@@ -47,12 +100,12 @@ const ParkingSpotCard: React.FC<ParkingSpotProps> = ({
           <div>
             <CardTitle className="text-lg flex items-center">
               {spot.name}
-              <Badge 
-                variant={spot.type === 'garage' ? 'default' : 'secondary'} 
-                className="ml-2"
-              >
-                {spot.type === 'garage' ? 'Garage' : 'Street'}
-              </Badge>
+              {getTypeBadge()}
+              {spot.discountAvailable && (
+                <Badge variant="outline" className="ml-2 text-green-600 border-green-600 dark:text-green-400 dark:border-green-400">
+                  Discount
+                </Badge>
+              )}
             </CardTitle>
             {spot.address && (
               <div className="text-sm text-muted-foreground mt-1 flex items-center">
@@ -89,6 +142,35 @@ const ParkingSpotCard: React.FC<ParkingSpotProps> = ({
           </span>
         </div>
 
+        {/* Opening hours */}
+        <div className="flex justify-between items-center">
+          <span className="text-sm font-medium">Hours</span>
+          <span className="text-sm font-medium">
+            {getOpeningHours()}
+          </span>
+        </div>
+
+        {/* Features section */}
+        {spot.features && spot.features.length > 0 && (
+          <div className="flex flex-wrap gap-1 pt-1 border-t border-gray-200 dark:border-gray-700">
+            {spot.hasElectricCharging && (
+              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800">
+                <Battery className="h-3 w-3 mr-1" />EV Charging
+              </Badge>
+            )}
+            {spot.securityCamera && (
+              <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
+                <ShieldCheck className="h-3 w-3 mr-1" />Security
+              </Badge>
+            )}
+            {spot.isCovered && (
+              <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800">
+                <Umbrella className="h-3 w-3 mr-1" />Covered
+              </Badge>
+            )}
+          </div>
+        )}
+
         {/* Rating section */}
         {spot.rating && (
           <div className="flex justify-between items-center pt-1 border-t border-gray-200 dark:border-gray-700">
@@ -111,6 +193,14 @@ const ParkingSpotCard: React.FC<ParkingSpotProps> = ({
                 {spot.reviews} reviews
               </div>
             )}
+          </div>
+        )}
+
+        {/* Operated by info */}
+        {spot.operatedBy && (
+          <div className="text-xs text-muted-foreground flex items-center pt-1">
+            <Home className="h-3 w-3 mr-1" />
+            Operated by: {spot.operatedBy}
           </div>
         )}
 
@@ -150,6 +240,73 @@ const ParkingSpotCard: React.FC<ParkingSpotProps> = ({
           Navigate
         </Button>
       </CardFooter>
+      
+      {/* Detailed info hover card */}
+      <HoverCard openDelay={300}>
+        <HoverCardTrigger asChild>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="absolute bottom-1 right-1 h-6 w-6 p-0 rounded-full"
+          >
+            <Info className="h-3 w-3" />
+          </Button>
+        </HoverCardTrigger>
+        <HoverCardContent className="w-80 dark:bg-gray-800">
+          <div className="space-y-3">
+            <h4 className="font-semibold">{spot.name} - Detailed Info</h4>
+            
+            <div className="grid grid-cols-2 gap-y-2 text-sm">
+              <span className="text-muted-foreground">Type:</span>
+              <span className="font-medium">{spot.type.charAt(0).toUpperCase() + spot.type.slice(1)}</span>
+              
+              <span className="text-muted-foreground">Address:</span>
+              <span className="font-medium">{spot.address}</span>
+              
+              <span className="text-muted-foreground">Availability:</span>
+              <span className="font-medium">{spot.available} of {spot.total} spots</span>
+              
+              <span className="text-muted-foreground">Price per hour:</span>
+              <span className="font-medium">₹{spot.price}</span>
+              
+              <span className="text-muted-foreground">Hours:</span>
+              <span className="font-medium">{getOpeningHours()}</span>
+              
+              {spot.operatedBy && (
+                <>
+                  <span className="text-muted-foreground">Operator:</span>
+                  <span className="font-medium">{spot.operatedBy}</span>
+                </>
+              )}
+              
+              {spot.features && spot.features.length > 0 && (
+                <>
+                  <span className="text-muted-foreground">Features:</span>
+                  <span className="font-medium">{spot.features.join(', ')}</span>
+                </>
+              )}
+            </div>
+            
+            <div className="flex justify-center pt-2">
+              <Button 
+                size="sm"
+                variant="outline"
+                className="text-xs mr-2"
+                onClick={() => onReport(spot.id)}
+              >
+                Update Availability
+              </Button>
+              <Button 
+                size="sm"
+                className="text-xs bg-parknav-blue hover:bg-blue-600"
+                onClick={() => onNavigate(spot.coordinates)}
+              >
+                Navigate
+              </Button>
+            </div>
+          </div>
+        </HoverCardContent>
+      </HoverCard>
     </Card>
   );
 };
