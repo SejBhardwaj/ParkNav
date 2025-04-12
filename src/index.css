@@ -129,7 +129,7 @@
 }
 
 .mapboxgl-popup-content {
-  @apply p-3 rounded-md shadow-lg;
+  @apply p-3 rounded-md shadow-lg dark:bg-gray-800 dark:text-white;
 }
 
 .car-marker {
@@ -146,4 +146,35 @@
 
 .animate-fade-in {
   animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* Dark mode improvements for map elements */
+.dark .mapboxgl-ctrl-attrib {
+  @apply bg-gray-800 text-gray-300;
+}
+
+.dark .mapboxgl-ctrl button {
+  @apply bg-gray-800 text-gray-300;
+}
+
+.dark .mapboxgl-ctrl-logo {
+  filter: invert(1);
+}
+
+/* Accessibility improvements */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Focus outline improvements */
+:focus-visible {
+  @apply outline-none ring-2 ring-primary ring-offset-2;
 }
