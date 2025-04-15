@@ -1,9 +1,8 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { toast } from '@/components/ui/use-toast';
-import { getParkingSpots } from '@/lib/api';
+import { sampleParkingSpots, generateETA } from '@/lib/sampleData';
 import { Car, NavigationIcon } from 'lucide-react';
 
 // Temporary public token for demo purposes
@@ -25,6 +24,21 @@ const Map: React.FC<MapProps> = ({ onSpotSelect }) => {
   const [lat, setLat] = useState(19.0760);
   const [zoom, setZoom] = useState(12);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+
+  const animateCarMovement = (userLocation: [number, number]) => {
+    if (!userMarker.current || !map.current) return;
+    
+    const angle = Math.random() * 360; // Random direction
+    const distance = 0.0002; // Small movement distance
+    
+    const newLng = userLocation[0] + Math.cos(angle) * distance;
+    const newLat = userLocation[1] + Math.sin(angle) * distance;
+    
+    userMarker.current.setLngLat([newLng, newLat])
+      .setRotation(angle * (180 / Math.PI));
+      
+    return [newLng, newLat] as [number, number];
+  };
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
@@ -152,12 +166,131 @@ const Map: React.FC<MapProps> = ({ onSpotSelect }) => {
     };
   }, []);
 
-  // Load parking spots when map is ready
   useEffect(() => {
-    if (mapReady && map.current) {
-      loadParkingSpots();
+    if (!mapReady || !map.current) return;
+    
+    // Update spots with ETAs
+    const spotsWithETA = sampleParkingSpots.map(spot => ({
+      ...spot,
+      etaMinutes: userLocation ? generateETA(spot, userLocation) : undefined
+    }));
+
+    // Add parking spots to map
+    if (!map.current.getSource('parking-spots')) {
+      map.current.addSource('parking-spots', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: spotsWithETA.map(spot => ({
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: [spot.longitude, spot.latitude]
+            },
+            properties: {
+              ...spot,
+              type: spot.type,
+              available: spot.spotsAvailable,
+              total: spot.totalSpots
+            }
+          }))
+        }
+      });
+
+      // Add marker layer with custom styling
+      map.current.addLayer({
+        id: 'parking-spots-layer',
+        type: 'circle',
+        source: 'parking-spots',
+        paint: {
+          'circle-radius': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            12, 6,
+            16, 12
+          ],
+          'circle-color': [
+            'match',
+            ['get', 'type'],
+            'street', '#FF6B35',
+            'garage', '#2E7BFF',
+            '#888'
+          ],
+          'circle-opacity': [
+            'interpolate',
+            ['linear'],
+            ['get', 'available'],
+            0, 0.4,
+            10, 0.8
+          ],
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#ffffff'
+        }
+      });
+
+      // Add pulsing effect layer
+      map.current.addLayer({
+        id: 'parking-spots-pulse',
+        type: 'circle',
+        source: 'parking-spots',
+        paint: {
+          'circle-radius': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            12, 10,
+            16, 20
+          ],
+          'circle-color': [
+            'match',
+            ['get', 'type'],
+            'street', '#FF6B35',
+            'garage', '#2E7BFF',
+            '#888'
+          ],
+          'circle-opacity': 0.2,
+          'circle-stroke-width': 0,
+          'circle-blur': 1
+        }
+      });
     }
-  }, [mapReady]);
+
+    // Handle click events
+    map.current.on('click', 'parking-spots-layer', (e) => {
+      if (!e.features?.length) return;
+      
+      const feature = e.features[0];
+      const coordinates = feature.geometry.coordinates.slice() as [number, number];
+      const properties = feature.properties;
+      
+      // Calculate ETA if user location exists
+      const eta = userLocation ? generateETA(properties, userLocation) : undefined;
+      
+      new mapboxgl.Popup()
+        .setLngLat(coordinates)
+        .setHTML(`
+          <div class="p-3 dark:bg-gray-800">
+            <h3 class="font-semibold text-lg">${properties.name}</h3>
+            <p class="text-sm">Available: ${properties.available}/${properties.total}</p>
+            <p class="text-sm">Price: ₹${properties.price}/hr</p>
+            ${eta ? `<p class="text-sm">ETA: ~${eta} mins</p>` : ''}
+            <p class="text-sm mt-1">
+              <span class="text-yellow-500">★</span> 
+              ${properties.rating.toFixed(1)} (${properties.reviews} reviews)
+            </p>
+          </div>
+        `)
+        .addTo(map.current);
+      
+      // Pass selected spot to parent
+      onSpotSelect({
+        ...properties,
+        coordinates,
+        eta
+      });
+    });
+  }, [mapReady, userLocation, onSpotSelect]);
 
   // Simulate car movement for demo purposes
   useEffect(() => {
@@ -166,173 +299,13 @@ const Map: React.FC<MapProps> = ({ onSpotSelect }) => {
     // Simulate movement by slightly changing position every few seconds
     const interval = setInterval(() => {
       if (userLocation && userMarker.current) {
-        // Random small movement
-        const newLng = userLocation[0] + (Math.random() - 0.5) * 0.0005;
-        const newLat = userLocation[1] + (Math.random() - 0.5) * 0.0005;
-        const newLocation: [number, number] = [newLng, newLat];
-        
-        // Animate movement
-        userMarker.current.setLngLat(newLocation);
+        const newLocation = animateCarMovement(userLocation);
         setUserLocation(newLocation);
       }
-    }, 3000);
+    }, 2000);
     
     return () => clearInterval(interval);
   }, [userLocation]);
-
-  const loadParkingSpots = async () => {
-    try {
-      const spots = await getParkingSpots();
-      
-      if (!map.current) return;
-      
-      // Add source for parking spots
-      if (!map.current.getSource('parking-spots')) {
-        map.current.addSource('parking-spots', {
-          type: 'geojson',
-          data: {
-            type: 'FeatureCollection',
-            features: spots.map(spot => ({
-              type: 'Feature',
-              geometry: {
-                type: 'Point',
-                coordinates: [spot.longitude, spot.latitude]
-              },
-              properties: {
-                id: spot.id,
-                name: spot.name,
-                type: spot.type,
-                available: spot.spotsAvailable,
-                total: spot.totalSpots,
-                price: spot.price,
-              }
-            }))
-          }
-        });
-        
-        // Add layer for parking spots with animated appearance
-        map.current.addLayer({
-          id: 'parking-spots-layer',
-          type: 'circle',
-          source: 'parking-spots',
-          paint: {
-            'circle-radius': [
-              'interpolate', ['linear'], ['zoom'],
-              10, 4,
-              15, 8
-            ],
-            'circle-color': [
-              'match',
-              ['get', 'type'],
-              'street', '#FF6B35',
-              'garage', '#2E7BFF',
-              '#888'
-            ],
-            'circle-opacity': 0.9,
-            'circle-stroke-width': 1,
-            'circle-stroke-color': '#fff',
-            'circle-pitch-alignment': 'map'
-          }
-        });
-        
-        // Add a pulsing circle animation layer
-        map.current.addLayer({
-          id: 'parking-spots-pulse',
-          type: 'circle',
-          source: 'parking-spots',
-          paint: {
-            'circle-radius': [
-              'interpolate',
-              ['linear'],
-              ['zoom'],
-              10, 10,
-              15, 20
-            ],
-            'circle-color': [
-              'match',
-              ['get', 'type'],
-              'street', '#FF6B35',
-              'garage', '#2E7BFF',
-              '#888'
-            ],
-            'circle-opacity': [
-              'interpolate',
-              ['linear'],
-              ['get', 'available'],
-              0, 0.1,
-              5, 0.3,
-              10, 0.5
-            ],
-            'circle-stroke-width': 0,
-            'circle-blur': 0.5
-          }
-        });
-        
-        // Add click event for parking spots
-        map.current.on('click', 'parking-spots-layer', (e) => {
-          if (e.features && e.features.length > 0) {
-            const feature = e.features[0];
-            const coordinates = feature.geometry.coordinates.slice() as [number, number];
-            const properties = feature.properties;
-            
-            // Create popup
-            new mapboxgl.Popup()
-              .setLngLat(coordinates)
-              .setHTML(`
-                <div>
-                  <h3 class="font-semibold">${properties.name}</h3>
-                  <p class="text-sm">Available: <span class="font-semibold">${properties.available}/${properties.total}</span></p>
-                  <p class="text-sm">Price: <span class="font-semibold">₹${properties.price}/hr</span></p>
-                </div>
-              `)
-              .addTo(map.current!);
-            
-            // Draw a simple route from user location to parking spot if available
-            if (userLocation && !routeDisplayed) {
-              drawSimpleRoute(userLocation, coordinates);
-              setRouteDisplayed(true);
-              
-              // Calculate estimated time of arrival (simple estimate)
-              const distance = calculateDistance(userLocation, coordinates);
-              const estimatedMinutes = Math.round(distance * 20); // Simple formula: ~20 mins per km
-              
-              toast({
-                title: "Route Calculated",
-                description: `Estimated arrival time: ${estimatedMinutes} minutes (${distance.toFixed(2)} km)`,
-              });
-            }
-            
-            // Pass the selected spot up to parent
-            onSpotSelect({
-              id: properties.id,
-              name: properties.name,
-              type: properties.type,
-              available: properties.available,
-              total: properties.total,
-              price: properties.price,
-              coordinates: coordinates
-            });
-          }
-        });
-        
-        // Change cursor on hover
-        map.current.on('mouseenter', 'parking-spots-layer', () => {
-          if (map.current) map.current.getCanvas().style.cursor = 'pointer';
-        });
-        
-        map.current.on('mouseleave', 'parking-spots-layer', () => {
-          if (map.current) map.current.getCanvas().style.cursor = '';
-        });
-      }
-    } catch (error) {
-      console.error('Error loading parking spots:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load parking spots. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
 
   // Calculate distance between two coordinates in kilometers
   const calculateDistance = (coord1: [number, number], coord2: [number, number]): number => {
