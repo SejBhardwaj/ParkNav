@@ -1,9 +1,10 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { toast } from '@/components/ui/use-toast';
 import { sampleParkingSpots, generateETA, ParkingSpot } from '@/lib/sampleData';
-import { Car, Navigation, Clock, Compass, Info, Filter } from 'lucide-react';
+import { Car, Navigation, Clock, Compass, Info } from 'lucide-react';
 
 // Temporary public token for demo purposes
 mapboxgl.accessToken = 'pk.eyJ1IjoibG92YWJsZS1haS1kZW1vIiwiYSI6ImNsb3BzZ2l6MzBrb2Eya3BpaDJpMnExcXEifQ.QcJVXaXzOQrfFrbuHlJQqw';
@@ -11,13 +12,6 @@ mapboxgl.accessToken = 'pk.eyJ1IjoibG92YWJsZS1haS1kZW1vIiwiYSI6ImNsb3BzZ2l6MzBrb
 interface MapProps {
   onSpotSelect: (spot: any) => void;
 }
-
-// Delhi default center coordinates
-const DEFAULT_CENTER = (window as any).defaultMapCenter || {
-  latitude: 28.6139,
-  longitude: 77.2090,
-  zoom: 12
-};
 
 const Map: React.FC<MapProps> = ({ onSpotSelect }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -29,14 +23,12 @@ const Map: React.FC<MapProps> = ({ onSpotSelect }) => {
   const [routeDistance, setRouteDistance] = useState<number | null>(null);
   const [routeDuration, setRouteDuration] = useState<number | null>(null);
   
-  // Default coordinates (Delhi)
-  const [lng, setLng] = useState(DEFAULT_CENTER.longitude);
-  const [lat, setLat] = useState(DEFAULT_CENTER.latitude);
-  const [zoom, setZoom] = useState(DEFAULT_CENTER.zoom);
+  // Default coordinates (Mumbai)
+  const [lng, setLng] = useState(72.8777);
+  const [lat, setLat] = useState(19.0760);
+  const [zoom, setZoom] = useState(12);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null);
-  const [nearbySpotsOnly, setNearbySpotsOnly] = useState(true);
-  const [visibleSpots, setVisibleSpots] = useState<ParkingSpot[]>([]);
 
   const animateCarMovement = (userLocation: [number, number]) => {
     if (!userMarker.current || !map.current) return;
@@ -52,27 +44,6 @@ const Map: React.FC<MapProps> = ({ onSpotSelect }) => {
       .setRotation(angle * (180 / Math.PI));
       
     return [newLng, newLat] as [number, number];
-  };
-
-  // Sort parking spots by distance to user
-  const sortSpotsByProximity = (spots: ParkingSpot[], userLoc: [number, number] | null): ParkingSpot[] => {
-    if (!userLoc) return spots;
-    
-    return [...spots].sort((a, b) => {
-      const distA = calculateDistance(userLoc, [a.longitude, a.latitude]);
-      const distB = calculateDistance(userLoc, [b.longitude, b.latitude]);
-      return distA - distB;
-    });
-  };
-
-  // Filter spots to only show nearby ones (within 5km by default)
-  const filterNearbySpots = (spots: ParkingSpot[], userLoc: [number, number] | null, radius: number = 5): ParkingSpot[] => {
-    if (!userLoc || !nearbySpotsOnly) return spots;
-    
-    return spots.filter(spot => {
-      const distance = calculateDistance(userLoc, [spot.longitude, spot.latitude]);
-      return distance <= radius;
-    });
   };
 
   useEffect(() => {
@@ -222,25 +193,11 @@ const Map: React.FC<MapProps> = ({ onSpotSelect }) => {
   useEffect(() => {
     if (!mapReady || !map.current) return;
     
-    // Update spots with ETAs and apply sorting and filtering
-    let processedSpots = [...sampleParkingSpots];
-    
-    // Add ETAs if user location exists
-    if (userLocation) {
-      processedSpots = processedSpots.map(spot => ({
-        ...spot,
-        etaMinutes: generateETA(spot, userLocation)
-      }));
-      
-      // Filter nearby spots if enabled
-      processedSpots = filterNearbySpots(processedSpots, userLocation);
-      
-      // Sort by proximity to user
-      processedSpots = sortSpotsByProximity(processedSpots, userLocation);
-    }
-    
-    // Save visible spots for later use
-    setVisibleSpots(processedSpots);
+    // Update spots with ETAs
+    const spotsWithETA = sampleParkingSpots.map(spot => ({
+      ...spot,
+      etaMinutes: userLocation ? generateETA(spot, userLocation) : undefined
+    }));
 
     // Add parking spots to map
     if (!map.current.getSource('parking-spots')) {
@@ -248,7 +205,7 @@ const Map: React.FC<MapProps> = ({ onSpotSelect }) => {
         type: 'geojson',
         data: {
           type: 'FeatureCollection',
-          features: processedSpots.map(spot => ({
+          features: spotsWithETA.map(spot => ({
             type: 'Feature',
             geometry: {
               type: 'Point',
@@ -330,160 +287,101 @@ const Map: React.FC<MapProps> = ({ onSpotSelect }) => {
           'circle-blur': 1
         }
       });
-    } else {
-      // Update existing source with new data
-      const source = map.current.getSource('parking-spots') as mapboxgl.GeoJSONSource;
-      source.setData({
-        type: 'FeatureCollection',
-        features: processedSpots.map(spot => ({
-          type: 'Feature',
-          geometry: {
-            type: 'Point',
-            coordinates: [spot.longitude, spot.latitude]
-          },
-          properties: {
-            ...spot,
-            id: spot.id,
-            name: spot.name,
-            type: spot.type,
-            latitude: spot.latitude,
-            longitude: spot.longitude,
-            available: spot.spotsAvailable,
-            total: spot.totalSpots,
-            price: spot.price,
-            rating: spot.rating,
-            reviews: spot.reviews,
-            features: spot.features,
-            securityLevel: spot.securityLevel
-          }
-        }))
-      });
     }
 
     // Handle click events
-    if (!map.current.listenerCount('click', 'parking-spots-layer')) {
-      map.current.on('click', 'parking-spots-layer', (e) => {
-        if (!e.features?.length) return;
-        
-        const feature = e.features[0];
-        const coordinates = feature.geometry.coordinates.slice() as [number, number];
-        const properties = feature.properties as any;
-        
-        // Set the selected spot ID
-        setSelectedSpotId(properties.id);
-        
-        // Calculate ETA if user location exists
-        const eta = userLocation ? generateETA({
-          id: properties.id,
-          name: properties.name,
-          type: properties.type,
-          latitude: properties.latitude,
-          longitude: properties.longitude,
-          price: properties.price,
-          spotsAvailable: properties.available,
-          totalSpots: properties.total,
-          rating: properties.rating,
-          reviews: properties.reviews,
-          features: Array.isArray(properties.features) ? properties.features : properties.features.split(','),
-          securityLevel: properties.securityLevel || 'medium'
-        } as ParkingSpot, userLocation) : undefined;
-        
-        // Create a popup with more detailed information
-        new mapboxgl.Popup({
-          closeButton: true,
-          closeOnClick: true,
-          maxWidth: '300px',
-          className: 'custom-popup'
-        })
-          .setLngLat(coordinates)
-          .setHTML(`
-            <div class="p-3 dark:bg-gray-800">
-              <h3 class="font-semibold text-lg">${properties.name}</h3>
-              <div class="flex items-center mt-1 text-sm">
-                <span class="text-yellow-500">★</span> 
-                <span class="ml-1">${properties.rating.toFixed(1)}</span>
-                <span class="text-gray-500 ml-1">(${properties.reviews} reviews)</span>
-              </div>
-              <div class="grid grid-cols-2 gap-2 mt-2 text-sm">
-                <div class="flex items-center">
-                  <div class="w-3 h-3 rounded-full ${properties.available > 0 ? 'bg-green-500' : 'bg-red-500'} mr-2"></div>
-                  <span>${properties.available}/${properties.total} spots</span>
-                </div>
-                <div class="flex items-center">
-                  <span class="font-semibold">₹${properties.price}/hr</span>
-                </div>
-                ${eta ? `
-                <div class="flex items-center col-span-2 mt-1">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1">
-                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                  </svg>
-                  <span>ETA: ~${eta} mins</span>
-                </div>` : ''}
-              </div>
-              <div class="mt-2 text-sm flex flex-wrap gap-1">
-                ${typeof properties.features === 'string' 
-                  ? properties.features.split(',').map((feature: string) => 
-                      `<span class="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-full text-xs">${feature}</span>`
-                    ).join('')
-                  : properties.features.map((feature: string) => 
-                      `<span class="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-full text-xs">${feature}</span>`
-                    ).join('')
-                }
-              </div>
-              <button id="get-directions" class="mt-3 w-full bg-blue-500 hover:bg-blue-600 text-white py-1.5 rounded flex items-center justify-center">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-1">
-                  <polygon points="3 11 22 2 13 21 11 13 3 11"/>
-                </svg>
-                Get Directions
-              </button>
+    map.current.on('click', 'parking-spots-layer', (e) => {
+      if (!e.features?.length) return;
+      
+      const feature = e.features[0];
+      const coordinates = feature.geometry.coordinates.slice() as [number, number];
+      const properties = feature.properties;
+      
+      // Set the selected spot ID
+      setSelectedSpotId(properties.id);
+      
+      // Calculate ETA if user location exists
+      const eta = userLocation ? generateETA(properties as ParkingSpot, userLocation) : undefined;
+      
+      // Create a popup with more detailed information
+      new mapboxgl.Popup({
+        closeButton: true,
+        closeOnClick: true,
+        maxWidth: '300px',
+        className: 'custom-popup'
+      })
+        .setLngLat(coordinates)
+        .setHTML(`
+          <div class="p-3 dark:bg-gray-800">
+            <h3 class="font-semibold text-lg">${properties.name}</h3>
+            <div class="flex items-center mt-1 text-sm">
+              <span class="text-yellow-500">★</span> 
+              <span class="ml-1">${properties.rating.toFixed(1)}</span>
+              <span class="text-gray-500 ml-1">(${properties.reviews} reviews)</span>
             </div>
-          `)
-          .addTo(map.current);
-        
-        // Convert properties to ParkingSpot format before passing to onSpotSelect
-        const completeSpot: ParkingSpot = {
-          id: properties.id,
-          name: properties.name,
-          type: properties.type,
-          latitude: properties.latitude,
-          longitude: properties.longitude,
-          price: properties.price,
-          spotsAvailable: properties.available,
-          totalSpots: properties.total,
-          rating: properties.rating,
-          reviews: properties.reviews,
-          features: Array.isArray(properties.features) ? properties.features : properties.features.split(','),
-          securityLevel: properties.securityLevel || 'medium',
-          etaMinutes: eta
-        };
-        
-        // Pass selected spot to parent with the correct type
-        onSpotSelect({
-          ...completeSpot,
-          coordinates
-        });
-        
-        // Add event listener to the "Get Directions" button
-        setTimeout(() => {
-          const directionButton = document.getElementById('get-directions');
-          if (directionButton && userLocation) {
-            directionButton.addEventListener('click', () => {
-              calculateAndDisplayRoute(userLocation, coordinates);
-            });
-          }
-        }, 100);
+            <div class="grid grid-cols-2 gap-2 mt-2 text-sm">
+              <div class="flex items-center">
+                <div class="w-3 h-3 rounded-full ${properties.available > 0 ? 'bg-green-500' : 'bg-red-500'} mr-2"></div>
+                <span>${properties.available}/${properties.total} spots</span>
+              </div>
+              <div class="flex items-center">
+                <span class="font-semibold">₹${properties.price}/hr</span>
+              </div>
+              ${eta ? `
+              <div class="flex items-center col-span-2 mt-1">
+                <Clock size={14} class="mr-1" />
+                <span>ETA: ~${eta} mins</span>
+              </div>` : ''}
+            </div>
+            <div class="mt-2 text-sm flex flex-wrap gap-1">
+              ${properties.features.map((feature: string) => 
+                `<span class="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-full text-xs">${feature}</span>`
+              ).join('')}
+            </div>
+            <button id="get-directions" class="mt-3 w-full bg-blue-500 hover:bg-blue-600 text-white py-1.5 rounded flex items-center justify-center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-1">
+                <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+              </svg>
+              Get Directions
+            </button>
+          </div>
+        `)
+        .addTo(map.current);
+      
+      // Convert properties to ParkingSpot format before passing to onSpotSelect
+      const completeSpot: ParkingSpot = {
+        id: properties.id,
+        name: properties.name,
+        type: properties.type,
+        latitude: properties.latitude,
+        longitude: properties.longitude,
+        price: properties.price,
+        spotsAvailable: properties.available,
+        totalSpots: properties.total,
+        rating: properties.rating,
+        reviews: properties.reviews,
+        features: properties.features,
+        securityLevel: properties.securityLevel || 'medium',
+        etaMinutes: eta
+      };
+      
+      // Pass selected spot to parent with the correct type
+      onSpotSelect({
+        ...completeSpot,
+        coordinates
       });
-    }
-  }, [mapReady, userLocation, nearbySpotsOnly]);
-
-  // Toggle nearby spots filter
-  const toggleNearbyFilter = () => {
-    setNearbySpotsOnly(!nearbySpotsOnly);
-    toast({
-      title: nearbySpotsOnly ? "Showing all parking spots" : "Showing nearby spots only",
-      description: nearbySpotsOnly ? "Displaying parking spots across Delhi" : "Filtered to spots within 5km of your location",
+      
+      // Add event listener to the "Get Directions" button
+      setTimeout(() => {
+        const directionButton = document.getElementById('get-directions');
+        if (directionButton && userLocation) {
+          directionButton.addEventListener('click', () => {
+            calculateAndDisplayRoute(userLocation, coordinates);
+          });
+        }
+      }, 100);
     });
-  };
+  }, [mapReady, userLocation, onSpotSelect]);
 
   // Simulate car movement for demo purposes
   useEffect(() => {
@@ -624,30 +522,16 @@ const Map: React.FC<MapProps> = ({ onSpotSelect }) => {
       <div ref={mapContainer} className="absolute inset-0 rounded-md overflow-hidden" />
       <div className="absolute top-4 left-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-2 rounded-md shadow-md text-xs">
         <div>
-          Delhi, India • {userLocation ? 'Live Location Active' : 'Locating...'}
+          Longitude: {lng} | Latitude: {lat}
         </div>
+        <div>Zoom: {zoom}</div>
       </div>
-      
-      {/* Filter control */}
-      <div className="absolute top-4 right-4 z-10">
-        <button 
-          className={`flex items-center gap-1 px-3 py-1.5 rounded-md shadow-md text-sm ${
-            nearbySpotsOnly ? 'bg-blue-500 text-white' : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-white'
-          }`}
-          onClick={toggleNearbyFilter}
-        >
-          <Filter size={14} />
-          {nearbySpotsOnly ? 'Nearby Only' : 'All Spots'}
-        </button>
-      </div>
-      
       {userLocation && (
         <div className="absolute bottom-4 right-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-2 rounded-md shadow-md flex items-center gap-2 text-sm animate-fade-in">
           <Car size={16} className="text-blue-500" />
           <span>Live location active</span>
         </div>
       )}
-      
       {routeDisplayed && routeDistance && routeDuration && (
         <div className="absolute bottom-4 left-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-3 rounded-md shadow-md flex flex-col gap-1 animate-fade-in">
           <h4 className="font-semibold text-sm flex items-center">

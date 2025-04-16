@@ -8,33 +8,24 @@ interface SplashScreenProps {
 
 const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
   const [showMadeWith, setShowMadeWith] = useState(false);
-  const [showTagline, setShowTagline] = useState(false);
 
   useEffect(() => {
-    // Show tagline after logo animation
-    const taglineTimer = setTimeout(() => {
-      setShowTagline(true);
-    }, 1000);
-    
-    // Show "Made with" attribution after tagline
-    const madeWithTimer = setTimeout(() => {
+    const timer = setTimeout(() => {
       setShowMadeWith(true);
     }, 2000);
 
-    // Complete the splash screen after animations
     const completeTimer = setTimeout(() => {
       onComplete();
     }, 3500);
 
     return () => {
-      clearTimeout(taglineTimer);
-      clearTimeout(madeWithTimer);
+      clearTimeout(timer);
       clearTimeout(completeTimer);
     };
   }, [onComplete]);
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-b from-white to-blue-50 flex flex-col items-center justify-center z-50">
+    <div className="fixed inset-0 bg-white flex flex-col items-center justify-center z-50">
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -45,13 +36,10 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
           src="/lovable-uploads/1ce864bd-c704-4b48-82f3-14aacb08f6cf.png" 
           alt="ParkNav Logo" 
           className="w-40 h-40 object-contain mb-4"
-          animate={{ 
-            scale: [1, 1.05, 1],
-            rotate: [0, 2, 0, -2, 0]
-          }}
+          animate={{ scale: [1, 1.05, 1] }}
           transition={{ 
             repeat: Infinity, 
-            duration: 3,
+            duration: 2,
             ease: "easeInOut"
           }}
         />
@@ -63,19 +51,15 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
         >
           <span className="text-parknav-orange">Park</span>
           <span className="text-parknav-blue">Nav</span>
-          <span className="text-parknav-orange"> Delhi</span>
         </motion.h1>
-        
-        {showTagline && (
-          <motion.p 
-            className="text-gray-600 text-lg"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            Park Smarter, Not Harder
-          </motion.p>
-        )}
+        <motion.p 
+          className="text-gray-600 text-lg"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6, duration: 0.5 }}
+        >
+          Find parking, seamlessly.
+        </motion.p>
       </motion.div>
 
       {showMadeWith && (
@@ -93,13 +77,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
           />
         </motion.div>
       )}
-      
-      <motion.div
-        className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-parknav-orange to-parknav-blue"
-        initial={{ scaleX: 0, transformOrigin: "left" }}
-        animate={{ scaleX: 1 }}
-        transition={{ delay: 0.5, duration: 3 }}
-      />
     </div>
   );
 };
