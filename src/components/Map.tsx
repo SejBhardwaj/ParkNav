@@ -1,9 +1,10 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { toast } from '@/components/ui/use-toast';
 import { sampleParkingSpots, generateETA, ParkingSpot } from '@/lib/sampleData';
-import { Car, NavigationIcon } from 'lucide-react';
+import { Car, Navigation, Clock, Compass, Info } from 'lucide-react';
 
 // Temporary public token for demo purposes
 mapboxgl.accessToken = 'pk.eyJ1IjoibG92YWJsZS1haS1kZW1vIiwiYSI6ImNsb3BzZ2l6MzBrb2Eya3BpaDJpMnExcXEifQ.QcJVXaXzOQrfFrbuHlJQqw';
@@ -18,12 +19,16 @@ const Map: React.FC<MapProps> = ({ onSpotSelect }) => {
   const userMarker = useRef<mapboxgl.Marker | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [routeDisplayed, setRouteDisplayed] = useState(false);
+  const [selectedRoute, setSelectedRoute] = useState<mapboxgl.GeoJSONSource | null>(null);
+  const [routeDistance, setRouteDistance] = useState<number | null>(null);
+  const [routeDuration, setRouteDuration] = useState<number | null>(null);
   
   // Default coordinates (Mumbai)
   const [lng, setLng] = useState(72.8777);
   const [lat, setLat] = useState(19.0760);
   const [zoom, setZoom] = useState(12);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null);
 
   const animateCarMovement = (userLocation: [number, number]) => {
     if (!userMarker.current || !map.current) return;
@@ -34,6 +39,7 @@ const Map: React.FC<MapProps> = ({ onSpotSelect }) => {
     const newLng = userLocation[0] + Math.cos(angle) * distance;
     const newLat = userLocation[1] + Math.sin(angle) * distance;
     
+    // Animate the movement
     userMarker.current.setLngLat([newLng, newLat])
       .setRotation(angle * (180 / Math.PI));
       
@@ -51,12 +57,22 @@ const Map: React.FC<MapProps> = ({ onSpotSelect }) => {
       zoom: zoom,
       pitch: 45, // Add tilt for a more 3D effect
       bearing: 0,
-      antialias: true // Smooth edges for a better visual
+      antialias: true, // Smooth edges for a better visual
+      attributionControl: false // Hide attribution for cleaner UI
     });
+
+    // Add attribution control in a custom position
+    map.current.addControl(
+      new mapboxgl.AttributionControl({ compact: true }),
+      'bottom-right'
+    );
 
     // Add navigation controls
     map.current.addControl(
-      new mapboxgl.NavigationControl(),
+      new mapboxgl.NavigationControl({
+        visualizePitch: true,
+        showCompass: true,
+      }),
       'top-right'
     );
 
@@ -65,7 +81,9 @@ const Map: React.FC<MapProps> = ({ onSpotSelect }) => {
       positionOptions: {
         enableHighAccuracy: true
       },
-      trackUserLocation: true
+      trackUserLocation: true,
+      showAccuracyCircle: true,
+      showUserHeading: true
     });
     
     map.current.addControl(geolocateControl);
@@ -89,7 +107,13 @@ const Map: React.FC<MapProps> = ({ onSpotSelect }) => {
           'type': 'fill-extrusion',
           'minzoom': 14,
           'paint': {
-            'fill-extrusion-color': '#aaa',
+            'fill-extrusion-color': [
+              'match',
+              ['get', 'type'],
+              'commercial', '#6B7DB3',
+              'residential', '#D1C0A8',
+              '#aaa'
+            ],
             'fill-extrusion-height': [
               'interpolate', ['linear'], ['zoom'],
               14, 0,
@@ -189,9 +213,18 @@ const Map: React.FC<MapProps> = ({ onSpotSelect }) => {
             },
             properties: {
               ...spot,
+              id: spot.id,
+              name: spot.name,
               type: spot.type,
+              latitude: spot.latitude,
+              longitude: spot.longitude,
               available: spot.spotsAvailable,
-              total: spot.totalSpots
+              total: spot.totalSpots,
+              price: spot.price,
+              rating: spot.rating,
+              reviews: spot.reviews,
+              features: spot.features,
+              securityLevel: spot.securityLevel
             }
           }))
         }
@@ -264,21 +297,53 @@ const Map: React.FC<MapProps> = ({ onSpotSelect }) => {
       const coordinates = feature.geometry.coordinates.slice() as [number, number];
       const properties = feature.properties;
       
+      // Set the selected spot ID
+      setSelectedSpotId(properties.id);
+      
       // Calculate ETA if user location exists
       const eta = userLocation ? generateETA(properties as ParkingSpot, userLocation) : undefined;
       
-      new mapboxgl.Popup()
+      // Create a popup with more detailed information
+      new mapboxgl.Popup({
+        closeButton: true,
+        closeOnClick: true,
+        maxWidth: '300px',
+        className: 'custom-popup'
+      })
         .setLngLat(coordinates)
         .setHTML(`
           <div class="p-3 dark:bg-gray-800">
             <h3 class="font-semibold text-lg">${properties.name}</h3>
-            <p class="text-sm">Available: ${properties.available}/${properties.total}</p>
-            <p class="text-sm">Price: ₹${properties.price}/hr</p>
-            ${eta ? `<p class="text-sm">ETA: ~${eta} mins</p>` : ''}
-            <p class="text-sm mt-1">
+            <div class="flex items-center mt-1 text-sm">
               <span class="text-yellow-500">★</span> 
-              ${properties.rating.toFixed(1)} (${properties.reviews} reviews)
-            </p>
+              <span class="ml-1">${properties.rating.toFixed(1)}</span>
+              <span class="text-gray-500 ml-1">(${properties.reviews} reviews)</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mt-2 text-sm">
+              <div class="flex items-center">
+                <div class="w-3 h-3 rounded-full ${properties.available > 0 ? 'bg-green-500' : 'bg-red-500'} mr-2"></div>
+                <span>${properties.available}/${properties.total} spots</span>
+              </div>
+              <div class="flex items-center">
+                <span class="font-semibold">₹${properties.price}/hr</span>
+              </div>
+              ${eta ? `
+              <div class="flex items-center col-span-2 mt-1">
+                <Clock size={14} class="mr-1" />
+                <span>ETA: ~${eta} mins</span>
+              </div>` : ''}
+            </div>
+            <div class="mt-2 text-sm flex flex-wrap gap-1">
+              ${properties.features.map((feature: string) => 
+                `<span class="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-full text-xs">${feature}</span>`
+              ).join('')}
+            </div>
+            <button id="get-directions" class="mt-3 w-full bg-blue-500 hover:bg-blue-600 text-white py-1.5 rounded flex items-center justify-center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-1">
+                <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+              </svg>
+              Get Directions
+            </button>
           </div>
         `)
         .addTo(map.current);
@@ -305,6 +370,16 @@ const Map: React.FC<MapProps> = ({ onSpotSelect }) => {
         ...completeSpot,
         coordinates
       });
+      
+      // Add event listener to the "Get Directions" button
+      setTimeout(() => {
+        const directionButton = document.getElementById('get-directions');
+        if (directionButton && userLocation) {
+          directionButton.addEventListener('click', () => {
+            calculateAndDisplayRoute(userLocation, coordinates);
+          });
+        }
+      }, 100);
     });
   }, [mapReady, userLocation, onSpotSelect]);
 
@@ -336,17 +411,45 @@ const Map: React.FC<MapProps> = ({ onSpotSelect }) => {
     return R * c;
   };
 
-  // Draw a simple route from user to parking spot
-  const drawSimpleRoute = (start: [number, number], end: [number, number]) => {
+  // Calculate and display a route from start to end
+  const calculateAndDisplayRoute = (start: [number, number], end: [number, number]) => {
     if (!map.current) return;
+
+    // In a real app, this would call a routing API
+    // For this demo, we'll create a simple route with intermediate points
     
-    // Remove existing route if there is one
-    if (map.current.getSource('route')) {
-      map.current.removeLayer('route-layer');
-      map.current.removeSource('route');
+    // Remove existing route if present
+    if (routeDisplayed) {
+      if (map.current.getLayer('route-layer')) {
+        map.current.removeLayer('route-layer');
+      }
+      if (map.current.getSource('route')) {
+        map.current.removeSource('route');
+      }
+      setRouteDisplayed(false);
     }
     
-    // Add simple route source and layer
+    // Create a simple direct route (in a real app, use a routing API)
+    const distance = calculateDistance(start, end);
+    
+    // Create some intermediate points for a more realistic route
+    const points = 5; // Number of intermediate points
+    const route = [start];
+    
+    // Add some randomness to make route look more natural
+    for (let i = 1; i <= points; i++) {
+      const ratio = i / (points + 1);
+      const lat = start[1] + (end[1] - start[1]) * ratio;
+      const lng = start[0] + (end[0] - start[0]) * ratio;
+      
+      // Add some randomness
+      const offset = 0.001 * Math.sin(i * Math.PI); // Creates slight curve
+      route.push([lng + offset, lat + offset * 2] as [number, number]);
+    }
+    
+    route.push(end);
+    
+    // Add the route source
     map.current.addSource('route', {
       type: 'geojson',
       data: {
@@ -354,11 +457,12 @@ const Map: React.FC<MapProps> = ({ onSpotSelect }) => {
         properties: {},
         geometry: {
           type: 'LineString',
-          coordinates: [start, end]
+          coordinates: route
         }
       }
     });
     
+    // Add animated route layer
     map.current.addLayer({
       id: 'route-layer',
       type: 'line',
@@ -371,11 +475,38 @@ const Map: React.FC<MapProps> = ({ onSpotSelect }) => {
         'line-color': '#2E7BFF',
         'line-width': 4,
         'line-opacity': 0.8,
-        'line-dasharray': [0.5, 1.5] // For animated dashed line effect
+        'line-dasharray': [0, 2, 1] // Makes the line appear to flow
       }
     });
     
-    // Fit map to show both points
+    // Animate the line dash to create a flowing effect
+    let dashOffset = 0;
+    function animateDashArray() {
+      dashOffset = (dashOffset + 1) % 4;
+      map.current?.setPaintProperty('route-layer', 'line-dasharray', [0, dashOffset, 1]);
+      requestAnimationFrame(animateDashArray);
+    }
+    
+    requestAnimationFrame(animateDashArray);
+    
+    // Calculate estimated duration (simple calculation)
+    const speedKmPerHour = 30; // Assuming average city speed
+    const durationHours = distance / speedKmPerHour;
+    const durationMinutes = Math.round(durationHours * 60);
+    
+    // Set state
+    setRouteDisplayed(true);
+    setRouteDistance(parseFloat(distance.toFixed(1)));
+    setRouteDuration(durationMinutes);
+    
+    // Show route information in a toast
+    toast({
+      title: "Route Calculated",
+      description: `Distance: ${distance.toFixed(1)} km • ETA: ~${durationMinutes} mins`,
+      duration: 5000,
+    });
+    
+    // Fit map to show route with padding
     const bounds = new mapboxgl.LngLatBounds()
       .extend(start)
       .extend(end);
@@ -389,16 +520,34 @@ const Map: React.FC<MapProps> = ({ onSpotSelect }) => {
   return (
     <div className="relative w-full h-full flex-1">
       <div ref={mapContainer} className="absolute inset-0 rounded-md overflow-hidden" />
-      <div className="absolute top-4 left-4 bg-white/80 backdrop-blur-sm p-2 rounded-md shadow-md text-xs">
+      <div className="absolute top-4 left-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-2 rounded-md shadow-md text-xs">
         <div>
           Longitude: {lng} | Latitude: {lat}
         </div>
         <div>Zoom: {zoom}</div>
       </div>
       {userLocation && (
-        <div className="absolute bottom-4 right-4 bg-white/80 backdrop-blur-sm p-2 rounded-md shadow-md flex items-center gap-2 text-sm animate-fade-in">
+        <div className="absolute bottom-4 right-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-2 rounded-md shadow-md flex items-center gap-2 text-sm animate-fade-in">
           <Car size={16} className="text-blue-500" />
           <span>Live location active</span>
+        </div>
+      )}
+      {routeDisplayed && routeDistance && routeDuration && (
+        <div className="absolute bottom-4 left-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-3 rounded-md shadow-md flex flex-col gap-1 animate-fade-in">
+          <h4 className="font-semibold text-sm flex items-center">
+            <Navigation size={14} className="mr-1 text-blue-500" />
+            Route Information
+          </h4>
+          <div className="flex items-center gap-3 text-xs">
+            <span className="flex items-center">
+              <Compass size={12} className="mr-1" />
+              {routeDistance} km
+            </span>
+            <span className="flex items-center">
+              <Clock size={12} className="mr-1" />
+              ~{routeDuration} mins
+            </span>
+          </div>
         </div>
       )}
     </div>
