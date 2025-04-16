@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { toast } from '@/components/ui/use-toast';
-import { sampleParkingSpots, generateETA } from '@/lib/sampleData';
+import { sampleParkingSpots, generateETA, ParkingSpot } from '@/lib/sampleData';
 import { Car, NavigationIcon } from 'lucide-react';
 
 // Temporary public token for demo purposes
@@ -265,7 +265,7 @@ const Map: React.FC<MapProps> = ({ onSpotSelect }) => {
       const properties = feature.properties;
       
       // Calculate ETA if user location exists
-      const eta = userLocation ? generateETA(properties, userLocation) : undefined;
+      const eta = userLocation ? generateETA(properties as ParkingSpot, userLocation) : undefined;
       
       new mapboxgl.Popup()
         .setLngLat(coordinates)
@@ -283,11 +283,27 @@ const Map: React.FC<MapProps> = ({ onSpotSelect }) => {
         `)
         .addTo(map.current);
       
-      // Pass selected spot to parent
+      // Convert properties to ParkingSpot format before passing to onSpotSelect
+      const completeSpot: ParkingSpot = {
+        id: properties.id,
+        name: properties.name,
+        type: properties.type,
+        latitude: properties.latitude,
+        longitude: properties.longitude,
+        price: properties.price,
+        spotsAvailable: properties.available,
+        totalSpots: properties.total,
+        rating: properties.rating,
+        reviews: properties.reviews,
+        features: properties.features,
+        securityLevel: properties.securityLevel || 'medium',
+        etaMinutes: eta
+      };
+      
+      // Pass selected spot to parent with the correct type
       onSpotSelect({
-        ...properties,
-        coordinates,
-        eta
+        ...completeSpot,
+        coordinates
       });
     });
   }, [mapReady, userLocation, onSpotSelect]);
