@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   MapPin, Search, Navigation, Menu, X, ArrowRight, Car, CheckCircle2, Smartphone, Map
 } from 'lucide-react';
+// testimonials data used by StaggerTestimonials internally
 import { LiquidButton } from '@/components/ui/liquid-glass-button';
 import { BeamsBackground } from '@/components/ui/beams-background';
 import { StaggerTestimonials } from '@/components/ui/stagger-testimonials';
@@ -78,6 +79,7 @@ function Navbar() {
               <button className="px-4 py-1.5 text-sm font-medium text-white/60 hover:text-white transition-colors">
                 Login
               </button>
+              {/* Liquid glass Sign Up button — small size */}
               <LiquidButton
                 size="sm"
                 className="!rounded-xl text-white font-semibold"

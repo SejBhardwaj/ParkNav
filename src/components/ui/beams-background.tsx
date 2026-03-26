@@ -35,17 +35,18 @@ export function BeamsBackground({ className, intensity = "strong", children }: A
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const beamsRef = useRef<Beam[]>([]);
   const animationFrameRef = useRef<number>(0);
-  const MINIMUM_BEAMS = 12; // Reduced from 20
+  const MINIMUM_BEAMS = 20;
   const opacityMap = { subtle: 0.5, medium: 0.65, strong: 0.8 };
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d", { alpha: true, desynchronized: true });
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     const updateCanvasSize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2); // Cap at 2x
+      const dpr = window.devicePixelRatio || 1;
+      // Always use full window size so beams cover the entire scrollable page
       const w = window.innerWidth;
       const h = Math.max(window.innerHeight, canvas.parentElement?.scrollHeight || window.innerHeight);
       canvas.width = w * dpr;
@@ -53,7 +54,7 @@ export function BeamsBackground({ className, intensity = "strong", children }: A
       canvas.style.width = `${w}px`;
       canvas.style.height = `${h}px`;
       ctx.scale(dpr, dpr);
-      beamsRef.current = Array.from({ length: MINIMUM_BEAMS }, () =>
+      beamsRef.current = Array.from({ length: MINIMUM_BEAMS * 1.5 }, () =>
         createBeam(w, h)
       );
     };
@@ -107,28 +108,17 @@ export function BeamsBackground({ className, intensity = "strong", children }: A
       ctx.restore();
     }
 
-    let lastTime = performance.now();
-    const targetFPS = 30; // Limit to 30fps instead of 60fps
-    const frameInterval = 1000 / targetFPS;
-
-    function animate(currentTime: number) {
+    function animate() {
       if (!canvas || !ctx) return;
-      
-      const elapsed = currentTime - lastTime;
-      if (elapsed < frameInterval) {
-        animationFrameRef.current = requestAnimationFrame(animate);
-        return;
-      }
-      lastTime = currentTime - (elapsed % frameInterval);
-      
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.filter = "blur(20px)"; // Reduced blur
+      ctx.filter = "blur(25px)";
       const totalBeams = beamsRef.current.length;
       beamsRef.current.forEach((beam, index) => {
         beam.y -= beam.speed;
         beam.pulse += beam.pulseSpeed;
         const h = parseInt(canvas.style.height);
         if (beam.y + beam.length < -100) resetBeam(beam, index, totalBeams);
+        // recycle from bottom when beam exits top
         if (beam.y < -beam.length - 100) {
           beam.y = h + 100;
         }
@@ -137,7 +127,7 @@ export function BeamsBackground({ className, intensity = "strong", children }: A
       animationFrameRef.current = requestAnimationFrame(animate);
     }
 
-    animate(performance.now());
+    animate();
     return () => {
       window.removeEventListener("resize", updateCanvasSize);
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);

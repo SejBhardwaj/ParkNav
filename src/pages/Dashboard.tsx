@@ -1,4 +1,4 @@
-import { useState, useMemo, memo, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -14,7 +14,7 @@ import { GridPattern, genRandomPattern } from '@/components/ui/grid-feature-card
 type SortOption = 'distance' | 'price' | 'rating' | 'availability';
 type FilterStatus = 'all' | ParkingStatus;
 
-const StatusBadge = memo(({ status }: { status: ParkingStatus }) => {
+function StatusBadge({ status }: { status: ParkingStatus }) {
   const config = {
     available: { label: 'Available', bg: 'bg-green-900/50', text: 'text-green-400', dot: 'bg-green-400' },
     limited: { label: 'Limited', bg: 'bg-amber-900/50', text: 'text-amber-400', dot: 'bg-amber-400' },
@@ -27,19 +27,17 @@ const StatusBadge = memo(({ status }: { status: ParkingStatus }) => {
       {c.label}
     </span>
   );
-});
-StatusBadge.displayName = 'StatusBadge';
+}
 
-const SpotCard = memo(({ spot, onSelect, selected }: { spot: ParkingSpot; onSelect: (s: ParkingSpot) => void; selected: boolean }) => {
+function SpotCard({ spot, onSelect, selected }: { spot: ParkingSpot; onSelect: (s: ParkingSpot) => void; selected: boolean }) {
   const gridPattern = useMemo(() => genRandomPattern(6), []);
-  const handleClick = useCallback(() => onSelect(spot), [onSelect, spot]);
 
   return (
     <motion.div
       layout
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      onClick={handleClick}
+      onClick={() => onSelect(spot)}
       className={`relative overflow-hidden rounded-2xl p-4 cursor-pointer transition-all border ${
         selected ? 'border-blue-500 bg-gray-900 shadow-lg shadow-blue-950' : 'border-gray-800 bg-gray-900 hover:border-gray-600'
       }`}
@@ -100,10 +98,9 @@ const SpotCard = memo(({ spot, onSelect, selected }: { spot: ParkingSpot; onSele
       </div>
     </motion.div>
   );
-});
-SpotCard.displayName = 'SpotCard';
+}
 
-const BookingModal = memo(({ spot, onClose }: { spot: ParkingSpot; onClose: () => void }) => {
+function BookingModal({ spot, onClose }: { spot: ParkingSpot; onClose: () => void }) {
   const [hours, setHours] = useState(2);
   const [booked, setBooked] = useState(false);
   const total = hours * spot.price;
@@ -199,8 +196,7 @@ const BookingModal = memo(({ spot, onClose }: { spot: ParkingSpot; onClose: () =
       </motion.div>
     </motion.div>
   );
-});
-BookingModal.displayName = 'BookingModal';
+}
 
 export default function Dashboard() {
   const [search, setSearch] = useState('');
@@ -209,11 +205,6 @@ export default function Dashboard() {
   const [selectedSpot, setSelectedSpot] = useState<ParkingSpot | null>(null);
   const [bookingSpot, setBookingSpot] = useState<ParkingSpot | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-
-  const handleSpotSelect = useCallback((spot: ParkingSpot) => {
-    setSelectedSpot(spot);
-    setBookingSpot(spot);
-  }, []);
 
   const filtered = useMemo(() => {
     let spots = mockParkingSpots;
@@ -322,7 +313,7 @@ export default function Dashboard() {
             ) : (
               filtered.map(spot => (
                 <SpotCard key={spot.id} spot={spot}
-                  onSelect={handleSpotSelect}
+                  onSelect={s => { setSelectedSpot(s); setBookingSpot(s); }}
                   selected={selectedSpot?.id === spot.id} />
               ))
             )}

@@ -1,4 +1,4 @@
-import { useState, memo, useCallback } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Search, MapPin, Filter, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -6,35 +6,6 @@ import { mockParkingSpots } from '../data/mockParkingData';
 import ParkingMap from '../components/Map/ParkingMap';
 import BottomNav from '../components/Navigation/BottomNav';
 import type { ParkingSpot } from '../types/parking';
-
-const SpotListItem = memo(({ spot, selected, onSelect }: { spot: ParkingSpot; selected: boolean; onSelect: (spot: ParkingSpot | null) => void }) => {
-  const handleClick = useCallback(() => {
-    onSelect(selected ? null : spot);
-  }, [spot, selected, onSelect]);
-
-  return (
-    <motion.div
-      whileHover={{ x: 3 }}
-      onClick={handleClick}
-      className={`p-3 rounded-xl cursor-pointer border transition-all ${
-        selected
-          ? 'border-blue-500 bg-blue-950/40'
-          : 'border-gray-800 hover:border-gray-700 hover:bg-gray-800'
-      }`}
-    >
-      <div className="flex items-center gap-2">
-        <div className="w-3 h-3 rounded-full flex-shrink-0" style={{
-          backgroundColor: spot.status === 'available' ? '#10B981' : spot.status === 'limited' ? '#F59E0B' : '#EF4444',
-        }} />
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium text-white truncate">{spot.name}</div>
-          <div className="text-xs text-gray-500">{spot.distance}km · ₹{spot.price}/hr</div>
-        </div>
-      </div>
-    </motion.div>
-  );
-});
-SpotListItem.displayName = 'SpotListItem';
 
 export default function MapPage() {
   const navigate = useNavigate();
@@ -77,12 +48,26 @@ export default function MapPage() {
           </div>
           <div className="p-3 space-y-2">
             {mockParkingSpots.map(spot => (
-              <SpotListItem
+              <motion.div
                 key={spot.id}
-                spot={spot}
-                selected={selectedSpot?.id === spot.id}
-                onSelect={setSelectedSpot}
-              />
+                whileHover={{ x: 3 }}
+                onClick={() => setSelectedSpot(selectedSpot?.id === spot.id ? null : spot)}
+                className={`p-3 rounded-xl cursor-pointer border transition-all ${
+                  selectedSpot?.id === spot.id
+                    ? 'border-blue-500 bg-blue-950/40'
+                    : 'border-gray-800 hover:border-gray-700 hover:bg-gray-800'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full flex-shrink-0" style={{
+                    backgroundColor: spot.status === 'available' ? '#10B981' : spot.status === 'limited' ? '#F59E0B' : '#EF4444',
+                  }} />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-white truncate">{spot.name}</div>
+                    <div className="text-xs text-gray-500">{spot.distance}km · ₹{spot.price}/hr</div>
+                  </div>
+                </div>
+              </motion.div>
             ))}
           </div>
         </div>
