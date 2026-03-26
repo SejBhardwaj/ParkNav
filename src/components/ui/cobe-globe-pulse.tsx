@@ -99,20 +99,20 @@ export function GlobePulse({
       if (width === 0 || globe) return
 
       globe = createGlobe(canvas, {
-        devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+        devicePixelRatio: Math.min(window.devicePixelRatio || 1, 1.5), // Reduced from 2
         width,
         height: width,
         phi: 0,
         theta: 0.2,
         dark: 1,
-        diffuse: 1.5,
-        mapSamples: 20000,
-        mapBrightness: 10,
+        diffuse: 1.2, // Reduced from 1.5
+        mapSamples: 12000, // Reduced from 20000
+        mapBrightness: 8, // Reduced from 10
         baseColor: [0.1, 0.15, 0.3],
         markerColor: [0.2, 0.8, 0.9],
         glowColor: [0.05, 0.1, 0.25],
         markerElevation: 0,
-        markers: markers.map((m) => ({ location: m.location, size: 0.025, id: m.id })),
+        markers: markers.slice(0, 12).map((m) => ({ location: m.location, size: 0.025, id: m.id })), // Limit markers
         arcs: [],
         arcColor: [0.3, 0.85, 0.95],
         arcWidth: 0.5,
@@ -120,7 +120,18 @@ export function GlobePulse({
         opacity: 0.7,
       })
 
-      function animate() {
+      let lastTime = performance.now();
+      const targetFPS = 30; // Limit to 30fps
+      const frameInterval = 1000 / targetFPS;
+
+      function animate(currentTime: number) {
+        const elapsed = currentTime - lastTime;
+        if (elapsed < frameInterval) {
+          animationId = requestAnimationFrame(animate);
+          return;
+        }
+        lastTime = currentTime - (elapsed % frameInterval);
+        
         if (!isPausedRef.current) phi += speed
         globe!.update({
           phi: phi + phiOffsetRef.current + dragOffset.current.phi,
@@ -128,7 +139,7 @@ export function GlobePulse({
         })
         animationId = requestAnimationFrame(animate)
       }
-      animate()
+      animate(performance.now())
       setTimeout(() => canvas && (canvas.style.opacity = "1"))
     }
 

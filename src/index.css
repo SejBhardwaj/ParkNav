@@ -1,32 +1,70 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@import "tailwindcss";
-
+/* Performance optimizations */
 * {
-  font-family: 'Inter', sans-serif;
-  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-body {
-  margin: 0;
-  background: #F8FAFC;
+/* GPU acceleration for animations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+  perspective: 1000px;
 }
 
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Optimize scrolling */
 html {
   scroll-behavior: smooth;
 }
 
-#root {
-  width: 100%;
-  min-height: 100svh;
+body {
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
 }
 
-@keyframes globe-pulse {
-  0% { transform: scale(0.3); opacity: 0.8; }
-  100% { transform: scale(2.5); opacity: 0; }
+/* Optimize images */
+img {
+  content-visibility: auto;
 }
 
-@keyframes globe-ring {
-  0% { transform: scale(0.4); opacity: 0.9; }
-  100% { transform: scale(1.8); opacity: 0; }
+/* Optimize leaflet map */
+.leaflet-container {
+  font-family: inherit;
+}
+
+.leaflet-tile-container {
+  will-change: transform;
+}
+
+/* Optimize framer motion */
+[data-framer-component-type] {
+  will-change: transform, opacity;
+}
+
+/* Reduce paint on hover */
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Optimize canvas rendering */
+canvas {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }

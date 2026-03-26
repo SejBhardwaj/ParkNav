@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, lazy, Suspense, memo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -8,13 +8,15 @@ import {
 import { mockParkingSpots } from '../data/mockParkingData';
 import type { ParkingSpot, ParkingStatus } from '../types/parking';
 import BottomNav from '../components/Navigation/BottomNav';
-import ParkingMap from '../components/Map/ParkingMap';
 import { GridPattern, genRandomPattern } from '@/components/ui/grid-feature-cards';
+
+// Lazy load heavy components
+const ParkingMap = lazy(() => import('../components/Map/ParkingMap'));
 
 type SortOption = 'distance' | 'price' | 'rating' | 'availability';
 type FilterStatus = 'all' | ParkingStatus;
 
-function StatusBadge({ status }: { status: ParkingStatus }) {
+const StatusBadge = memo(({ status }: { status: ParkingStatus }) => {
   const config = {
     available: { label: 'Available', bg: 'bg-green-900/50', text: 'text-green-400', dot: 'bg-green-400' },
     limited: { label: 'Limited', bg: 'bg-amber-900/50', text: 'text-amber-400', dot: 'bg-amber-400' },
@@ -27,17 +29,19 @@ function StatusBadge({ status }: { status: ParkingStatus }) {
       {c.label}
     </span>
   );
-}
+});
+StatusBadge.displayName = 'StatusBadge';
 
-function SpotCard({ spot, onSelect, selected }: { spot: ParkingSpot; onSelect: (s: ParkingSpot) => void; selected: boolean }) {
+const SpotCard = memo(({ spot, onSelect, selected }: { spot: ParkingSpot; onSelect: (s: ParkingSpot) => void; selected: boolean }) => {
   const gridPattern = useMemo(() => genRandomPattern(6), []);
+  const handleClick = useCallback(() => onSelect(spot), [onSelect, spot]);
 
   return (
     <motion.div
       layout
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      onClick={() => onSelect(spot)}
+      onClick={handleClick}
       className={`relative overflow-hidden rounded-2xl p-4 cursor-pointer transition-all border ${
         selected ? 'border-blue-500 bg-gray-900 shadow-lg shadow-blue-950' : 'border-gray-800 bg-gray-900 hover:border-gray-600'
       }`}
@@ -98,9 +102,10 @@ function SpotCard({ spot, onSelect, selected }: { spot: ParkingSpot; onSelect: (
       </div>
     </motion.div>
   );
-}
+});
+SpotCard.displayName = 'SpotCard';
 
-function BookingModal({ spot, onClose }: { spot: ParkingSpot; onClose: () => void }) {
+const BookingModal = memo(({ spot, onClose }: { spot: ParkingSpot; onClose: () => void }) => {
   const [hours, setHours] = useState(2);
   const [booked, setBooked] = useState(false);
   const total = hours * spot.price;
@@ -196,7 +201,8 @@ function BookingModal({ spot, onClose }: { spot: ParkingSpot; onClose: () => voi
       </motion.div>
     </motion.div>
   );
-}
+});
+BookingModal.displayName = 'BookingModal';
 
 export default function Dashboard() {
   const [search, setSearch] = useState('');
@@ -205,6 +211,11 @@ export default function Dashboard() {
   const [selectedSpot, setSelectedSpot] = useState<ParkingSpot | null>(null);
   const [bookingSpot, setBookingSpot] = useState<ParkingSpot | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+
+  const handleSpotSelect = useCallback((spot: ParkingSpot) => {
+    setSelectedSpot(spot);
+    setBookingSpot(spot);
+  }, []);
 
   const filtered = useMemo(() => {
     let spots = mockParkingSpots;
@@ -313,7 +324,7 @@ export default function Dashboard() {
             ) : (
               filtered.map(spot => (
                 <SpotCard key={spot.id} spot={spot}
-                  onSelect={s => { setSelectedSpot(s); setBookingSpot(s); }}
+                  onSelect={handleSpotSelect}
                   selected={selectedSpot?.id === spot.id} />
               ))
             )}
@@ -321,7 +332,9 @@ export default function Dashboard() {
         </div>
 
         <div className="hidden sm:flex flex-1 relative">
-          <ParkingMap spots={filtered} selectedSpot={selectedSpot} onSpotSelect={setSelectedSpot} />
+          <Suspense fallback={<div className="w-full h-full bg-gray-900 flex items-center justify-center"><div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>}>
+            <ParkingMap spots={filtered} selectedSpot={selectedSpot} onSpotSelect={setSelectedSpot} />
+          </Suspense>
         </div>
       </div>
 

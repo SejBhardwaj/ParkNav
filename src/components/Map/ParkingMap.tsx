@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, memo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Star, Navigation, Car, Video, Shield, Zap, MapPin } from 'lucide-react';
 import { AdvancedMap } from '@/components/ui/interactive-map';
@@ -17,9 +17,9 @@ const STATUS_COLORS: Record<string, string> = {
   full: 'red',
 };
 
-export default function ParkingMap({ spots, selectedSpot, onSpotSelect }: Props) {
+const ParkingMap = memo(({ spots, selectedSpot, onSpotSelect }: Props) => {
   // Delhi NCR center
-  const center: [number, number] = [28.6139, 77.2090];
+  const center: [number, number] = useMemo(() => [28.6139, 77.2090], []);
 
   const markers: MapMarker[] = useMemo(() =>
     spots.map(spot => ({
@@ -35,10 +35,12 @@ export default function ParkingMap({ spots, selectedSpot, onSpotSelect }: Props)
     [spots]
   );
 
-  const handleMarkerClick = (marker: MapMarker) => {
+  const handleMarkerClick = useCallback((marker: MapMarker) => {
     const spot = spots.find(s => s.id === marker.id);
     if (spot) onSpotSelect(selectedSpot?.id === spot.id ? null : spot);
-  };
+  }, [spots, onSpotSelect, selectedSpot]);
+
+  const handleClose = useCallback(() => onSpotSelect(null), [onSpotSelect]);
 
   return (
     <div className="relative w-full h-full">
@@ -85,7 +87,7 @@ export default function ParkingMap({ spots, selectedSpot, onSpotSelect }: Props)
                   <p className="text-xs text-slate-400 mt-0.5">{selectedSpot.address}</p>
                 </div>
                 <button
-                  onClick={() => onSpotSelect(null)}
+                  onClick={handleClose}
                   className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors flex-shrink-0"
                 >
                   <X size={13} />
@@ -126,4 +128,7 @@ export default function ParkingMap({ spots, selectedSpot, onSpotSelect }: Props)
       </AnimatePresence>
     </div>
   );
-}
+});
+ParkingMap.displayName = 'ParkingMap';
+
+export default ParkingMap;
