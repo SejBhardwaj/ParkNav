@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate, lazy, Suspense } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 // Lazy load all pages for better performance
 const Splash = lazy(() => import('./pages/Splash'));
