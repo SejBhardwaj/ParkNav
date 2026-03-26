@@ -1,0 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+@import "tailwindcss";
+
+* {
+  font-family: 'Inter', sans-serif;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #F8FAFC;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+#root {
+  width: 100%;
+  min-height: 100svh;
+}
+
+@keyframes globe-pulse {
+  0% { transform: scale(0.3); opacity: 0.8; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+@keyframes globe-ring {
+  0% { transform: scale(0.4); opacity: 0.9; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
