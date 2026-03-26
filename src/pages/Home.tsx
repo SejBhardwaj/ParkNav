@@ -2,9 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  MapPin, Search, Navigation, Zap, CreditCard,
-  Menu, X, ArrowRight, Car, BarChart3, Shield,
-  CheckCircle2, Smartphone, Map
+  MapPin, Search, Navigation, Menu, X, ArrowRight, Car, CheckCircle2, Smartphone, Map
 } from 'lucide-react';
 // testimonials data used by StaggerTestimonials internally
 import { LiquidButton } from '@/components/ui/liquid-glass-button';

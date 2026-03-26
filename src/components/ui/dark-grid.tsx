@@ -55,7 +55,7 @@ export default function DarkGrid() {
         </p>
 
         <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map(({ title, icon: Icon, color, desc }, i) => (
+          {items.map(({ title, icon: Icon, color, desc }) => (
             <Card
               key={title}
               className="group relative overflow-visible border-zinc-800 bg-gradient-to-b from-zinc-950/60 to-zinc-950/30 p-0 transition-colors duration-300 hover:border-zinc-700"
