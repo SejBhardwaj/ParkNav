@@ -1,4 +1,4 @@
-import { useState, useMemo, lazy, Suspense, memo, useCallback } from 'react';
+import { useState, useMemo, memo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -8,10 +8,8 @@ import {
 import { mockParkingSpots } from '../data/mockParkingData';
 import type { ParkingSpot, ParkingStatus } from '../types/parking';
 import BottomNav from '../components/Navigation/BottomNav';
+import ParkingMap from '../components/Map/ParkingMap';
 import { GridPattern, genRandomPattern } from '@/components/ui/grid-feature-cards';
-
-// Lazy load heavy components
-const ParkingMap = lazy(() => import('../components/Map/ParkingMap'));
 
 type SortOption = 'distance' | 'price' | 'rating' | 'availability';
 type FilterStatus = 'all' | ParkingStatus;
@@ -332,9 +330,7 @@ export default function Dashboard() {
         </div>
 
         <div className="hidden sm:flex flex-1 relative">
-          <Suspense fallback={<div className="w-full h-full bg-gray-900 flex items-center justify-center"><div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>}>
-            <ParkingMap spots={filtered} selectedSpot={selectedSpot} onSpotSelect={setSelectedSpot} />
-          </Suspense>
+          <ParkingMap spots={filtered} selectedSpot={selectedSpot} onSpotSelect={setSelectedSpot} />
         </div>
       </div>
 

@@ -1,13 +1,11 @@
-import { useState, lazy, Suspense, memo, useCallback } from 'react';
+import { useState, memo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Search, MapPin, Filter, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { mockParkingSpots } from '../data/mockParkingData';
+import ParkingMap from '../components/Map/ParkingMap';
 import BottomNav from '../components/Navigation/BottomNav';
 import type { ParkingSpot } from '../types/parking';
-
-// Lazy load map
-const ParkingMap = lazy(() => import('../components/Map/ParkingMap'));
 
 const SpotListItem = memo(({ spot, selected, onSelect }: { spot: ParkingSpot; selected: boolean; onSelect: (spot: ParkingSpot | null) => void }) => {
   const handleClick = useCallback(() => {
@@ -90,9 +88,7 @@ export default function MapPage() {
         </div>
 
         <div className="flex-1 relative">
-          <Suspense fallback={<div className="w-full h-full bg-gray-900 flex items-center justify-center"><div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>}>
-            <ParkingMap spots={mockParkingSpots} selectedSpot={selectedSpot} onSpotSelect={setSelectedSpot} />
-          </Suspense>
+          <ParkingMap spots={mockParkingSpots} selectedSpot={selectedSpot} onSpotSelect={setSelectedSpot} />
         </div>
       </div>
 

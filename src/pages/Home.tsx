@@ -1,20 +1,15 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MapPin, Search, Navigation, Menu, X, ArrowRight, Car, CheckCircle2, Smartphone, Map
 } from 'lucide-react';
-
-// Lazy load heavy components
-const LiquidButton = lazy(() => import('@/components/ui/liquid-glass-button').then(m => ({ default: m.LiquidButton })));
-const BeamsBackground = lazy(() => import('@/components/ui/beams-background').then(m => ({ default: m.BeamsBackground })));
-const StaggerTestimonials = lazy(() => import('@/components/ui/stagger-testimonials').then(m => ({ default: m.StaggerTestimonials })));
-const GlobePulse = lazy(() => import('@/components/ui/cobe-globe-pulse').then(m => ({ default: m.GlobePulse })));
-const AnimatedRoadmap = lazy(() => import('@/components/ui/hero-section-5').then(m => ({ default: m.AnimatedRoadmap })));
-const DarkGrid = lazy(() => import('@/components/ui/dark-grid'));
-
-// Loading fallback
-const LoadingFallback = () => <div className="w-full h-full flex items-center justify-center"><div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>;
+import { LiquidButton } from '@/components/ui/liquid-glass-button';
+import { BeamsBackground } from '@/components/ui/beams-background';
+import { StaggerTestimonials } from '@/components/ui/stagger-testimonials';
+import { GlobePulse } from '@/components/ui/cobe-globe-pulse';
+import { AnimatedRoadmap } from '@/components/ui/hero-section-5';
+import DarkGrid from '@/components/ui/dark-grid';
 
 const fadeUp = { hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0 } };
 
@@ -83,15 +78,13 @@ function Navbar() {
               <button className="px-4 py-1.5 text-sm font-medium text-white/60 hover:text-white transition-colors">
                 Login
               </button>
-              <Suspense fallback={<div className="w-20 h-8 bg-blue-600/50 rounded-xl animate-pulse" />}>
-                <LiquidButton
-                  size="sm"
-                  className="!rounded-xl text-white font-semibold"
-                  onClick={() => window.location.href = '/dashboard'}
-                >
-                  Sign Up
-                </LiquidButton>
-              </Suspense>
+              <LiquidButton
+                size="sm"
+                className="!rounded-xl text-white font-semibold"
+                onClick={() => window.location.href = '/dashboard'}
+              >
+                Sign Up
+              </LiquidButton>
             </div>
 
             {/* Mobile hamburger */}
@@ -122,12 +115,10 @@ function Navbar() {
                     </a>
                   ))}
                   <div className="flex gap-3 pt-3">
-                    <Suspense fallback={<div className="flex-1 h-9 bg-gray-800 rounded-xl animate-pulse" />}>
-                      <LiquidButton size="sm" className="flex-1 bg-white/10 text-white/70 rounded-xl border border-white/20">Login</LiquidButton>
-                      <LiquidButton size="sm" className="flex-1 bg-blue-600/80 text-white rounded-xl border border-blue-500/50">
-                        <Link to="/dashboard">Sign Up</Link>
-                      </LiquidButton>
-                    </Suspense>
+                    <LiquidButton size="sm" className="flex-1 bg-white/10 text-white/70 rounded-xl border border-white/20">Login</LiquidButton>
+                    <LiquidButton size="sm" className="flex-1 bg-blue-600/80 text-white rounded-xl border border-blue-500/50">
+                      <Link to="/dashboard">Sign Up</Link>
+                    </LiquidButton>
                   </div>
                 </div>
               </motion.div>
@@ -158,18 +149,14 @@ function HeroSection() {
             </p>
             <div className="flex flex-wrap gap-4">
               <Link to="/dashboard">
-                <Suspense fallback={<div className="w-36 h-12 bg-blue-600/50 rounded-xl animate-pulse" />}>
-                  <LiquidButton size="lg" className="bg-blue-600/80 text-white font-semibold rounded-xl border border-blue-500/50">
-                    <Search size={18} /> Find Parking
-                  </LiquidButton>
-                </Suspense>
+                <LiquidButton size="lg" className="bg-blue-600/80 text-white font-semibold rounded-xl border border-blue-500/50">
+                  <Search size={18} /> Find Parking
+                </LiquidButton>
               </Link>
               <Link to="/map">
-                <Suspense fallback={<div className="w-36 h-12 bg-gray-800 rounded-xl animate-pulse" />}>
-                  <LiquidButton size="lg" className="bg-white/10 text-white/80 font-semibold rounded-xl border border-white/20">
-                    <Map size={18} /> Explore Map
-                  </LiquidButton>
-                </Suspense>
+                <LiquidButton size="lg" className="bg-white/10 text-white/80 font-semibold rounded-xl border border-white/20">
+                  <Map size={18} /> Explore Map
+                </LiquidButton>
               </Link>
             </div>
             <div className="flex gap-8 pt-4">
@@ -183,18 +170,17 @@ function HeroSection() {
           </motion.div>
 
           <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, delay: 0.2 }} className="relative flex gap-4 items-start justify-center">
-            <Suspense fallback={<LoadingFallback />}>
-              {/* Combined: AnimatedRoadmap + parking card info at bottom */}
-              <div className="relative w-full max-w-[280px] flex-shrink-0 mt-32 -ml-24">
-                <AnimatedRoadmap
-                  mapImageSrc="https://www.thiings.co/_next/image?url=https%3A%2F%2Flftz25oez4aqbxpq.public.blob.vercel-storage.com%2Fimage-SsfjxCJh43Hr1dqzkbFWUGH3ICZQbH.png&w=320&q=75"
-                  milestones={[
-                    { id: 1, name: 'Find Spot', status: 'complete', position: { top: '72%', left: '2%' } },
-                    { id: 2, name: 'Navigate', status: 'complete', position: { top: '18%', left: '18%' } },
-                    { id: 3, name: 'Book Now', status: 'in-progress', position: { top: '48%', left: '52%' } },
-                    { id: 4, name: 'Park!', status: 'pending', position: { top: '12%', right: '2%' } },
-                  ]}
-                />
+            {/* Combined: AnimatedRoadmap + parking card info at bottom */}
+            <div className="relative w-full max-w-[280px] flex-shrink-0 mt-32 -ml-24">
+              <AnimatedRoadmap
+                mapImageSrc="https://www.thiings.co/_next/image?url=https%3A%2F%2Flftz25oez4aqbxpq.public.blob.vercel-storage.com%2Fimage-SsfjxCJh43Hr1dqzkbFWUGH3ICZQbH.png&w=320&q=75"
+                milestones={[
+                  { id: 1, name: 'Find Spot', status: 'complete', position: { top: '72%', left: '2%' } },
+                  { id: 2, name: 'Navigate', status: 'complete', position: { top: '18%', left: '18%' } },
+                  { id: 3, name: 'Book Now', status: 'in-progress', position: { top: '48%', left: '52%' } },
+                  { id: 4, name: 'Park!', status: 'pending', position: { top: '12%', right: '2%' } },
+                ]}
+              />
               {/* Parking info card at bottom of roadmap */}
               <div className="mt-2 bg-gray-900/80 backdrop-blur-sm rounded-2xl border border-white/10 p-3 flex items-center gap-2 shadow-xl">
                 <div className="w-8 h-8 bg-green-900/40 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -217,21 +203,18 @@ function HeroSection() {
                 <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
                 <div className="text-[10px] font-semibold text-gray-300">Live Updates</div>
               </motion.div>
-              </div>
-            </Suspense>
+            </div>
 
             {/* Globe */}
-            <Suspense fallback={<div className="w-96 h-96 bg-gray-900/50 rounded-full animate-pulse" />}>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 1, delay: 0.5 }}
-                className="flex-shrink-0 w-96 lg:w-[480px]"
-              >
-                <GlobePulse className="w-full" speed={0.004} />
-                <p className="text-center text-xs text-gray-500 mt-2">Live across India</p>
-              </motion.div>
-            </Suspense>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 1, delay: 0.5 }}
+              className="flex-shrink-0 w-96 lg:w-[480px]"
+            >
+              <GlobePulse className="w-full" speed={0.004} />
+              <p className="text-center text-xs text-gray-500 mt-2">Live across India</p>
+            </motion.div>
           </motion.div>
         </div>
       </div>
@@ -242,9 +225,7 @@ function HeroSection() {
 function FeaturesSection() {
   return (
     <section id="features" className="py-24">
-      <Suspense fallback={<LoadingFallback />}>
-        <DarkGrid />
-      </Suspense>
+      <DarkGrid />
     </section>
   );
 }
@@ -309,11 +290,9 @@ function HowItWorksSection() {
               <Link to="/dashboard" className="relative inline-flex items-center gap-2 h-9 px-4 bg-blue-600/80 text-white font-semibold rounded-xl border border-blue-500/50 hover:bg-blue-600 transition-all shadow-md shadow-blue-950/50">
                 Try Demo <ArrowRight size={16} />
               </Link>
-              <Suspense fallback={<div className="w-28 h-9 bg-gray-800 rounded-xl animate-pulse" />}>
-                <LiquidButton size="default" className="bg-blue-950/60 text-blue-400 font-semibold rounded-xl border border-blue-700/60">
-                  Learn More
-                </LiquidButton>
-              </Suspense>
+              <LiquidButton size="default" className="bg-blue-950/60 text-blue-400 font-semibold rounded-xl border border-blue-700/60">
+                Learn More
+              </LiquidButton>
             </div>
           </div>
         </div>
@@ -392,9 +371,7 @@ function TestimonialsSection() {
           <span className="text-blue-400 font-semibold text-sm uppercase tracking-widest">Testimonials</span>
           <h2 className="text-4xl font-bold text-white mt-3">Loved by drivers across Delhi</h2>
         </motion.div>
-        <Suspense fallback={<LoadingFallback />}>
-          <StaggerTestimonials />
-        </Suspense>
+        <StaggerTestimonials />
       </div>
     </section>
   );
@@ -414,14 +391,12 @@ function CTASection() {
           <h2 className="text-5xl font-bold text-white mb-5">Ready to park smarter?</h2>
           <p className="text-blue-200 text-lg mb-10 max-w-xl mx-auto">Join 50,000+ drivers who save time every day with ParkNav's intelligent parking system.</p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Suspense fallback={<div className="w-40 h-14 bg-white/50 rounded-xl animate-pulse" />}>
-              <LiquidButton size="xl" className="bg-white/90 text-blue-700 font-bold rounded-xl border border-white/50">
-                <Smartphone size={20} /> Download App
-              </LiquidButton>
-              <LiquidButton size="xl" className="bg-white/10 text-white font-bold rounded-xl border border-white/30">
-                <Link to="/dashboard" className="flex items-center gap-2"><MapPin size={20} /> Open Dashboard</Link>
-              </LiquidButton>
-            </Suspense>
+            <LiquidButton size="xl" className="bg-white/90 text-blue-700 font-bold rounded-xl border border-white/50">
+              <Smartphone size={20} /> Download App
+            </LiquidButton>
+            <LiquidButton size="xl" className="bg-white/10 text-white font-bold rounded-xl border border-white/30">
+              <Link to="/dashboard" className="flex items-center gap-2"><MapPin size={20} /> Open Dashboard</Link>
+            </LiquidButton>
           </div>
         </motion.div>
       </div>
@@ -471,17 +446,15 @@ function Footer() {
 
 export default function Home() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-950 flex items-center justify-center"><LoadingFallback /></div>}>
-      <BeamsBackground className="min-h-screen" intensity="strong">
-        <Navbar />
-        <HeroSection />
-        <FeaturesSection />
-        <HowItWorksSection />
-        <AnalyticsSection />
-        <TestimonialsSection />
-        <CTASection />
-        <Footer />
-      </BeamsBackground>
-    </Suspense>
+    <BeamsBackground className="min-h-screen" intensity="strong">
+      <Navbar />
+      <HeroSection />
+      <FeaturesSection />
+      <HowItWorksSection />
+      <AnalyticsSection />
+      <TestimonialsSection />
+      <CTASection />
+      <Footer />
+    </BeamsBackground>
   );
 }
