@@ -1,9 +1,10 @@
 <div align="center">
-  <img src="public/logo.png" alt="ParkNav Logo" width="200" height="200" />
+  <br />
+  <img src="public/logo.png" alt="ParkNav Logo" width="180" />
+  <br />
+  <br />
   
-  # ParkNav
-  
-  **Park Smarter, Not Harder**
+  # Park Smarter, Not Harder
   
   A modern parking solution that helps drivers find, book, and navigate to available parking spots in real-time across major cities in India.
   
