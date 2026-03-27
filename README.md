@@ -1,7 +1,6 @@
 <div align="center">
-  <img src="public/logo.png" alt="ParkNav Logo" width="200" height="200" />
   
-  # ParkNav
+  # <img src="public/logo.png" alt="ParkNav Logo" width="60" height="60" style="vertical-align: middle;" /> ParkNav
   
   **Park Smarter, Not Harder**
   
