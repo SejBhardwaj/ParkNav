@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="public/logo.png" alt="ParkNav Logo" width="120" height="120" />
+  <img src="public/logo.png" alt="ParkNav Logo" width="200" height="200" />
   
   # ParkNav
   
