@@ -1,33 +1,45 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Splash from './pages/Splash';
-import Home from './pages/Home';
-import Dashboard from './pages/Dashboard';
-import MapPage from './pages/MapPage';
-import History from './pages/History';
-import Profile from './pages/Profile';
-import Settings from './pages/Settings';
-import Vehicles from './pages/Vehicles';
-import Favorites from './pages/Favorites';
-import Notifications from './pages/Notifications';
-import PaymentMethods from './pages/PaymentMethods';
+
+// Lazy load all pages
+const Splash = lazy(() => import('./pages/Splash'));
+const Home = lazy(() => import('./pages/Home'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const MapPage = lazy(() => import('./pages/MapPage'));
+const History = lazy(() => import('./pages/History'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Vehicles = lazy(() => import('./pages/Vehicles'));
+const Favorites = lazy(() => import('./pages/Favorites'));
+const Notifications = lazy(() => import('./pages/Notifications'));
+const PaymentMethods = lazy(() => import('./pages/PaymentMethods'));
+
+// Loading fallback
+const PageLoader = () => (
+  <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
+    <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+  </div>
+);
 
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Splash />} />
-        <Route path="/home" element={<Home />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/map" element={<MapPage />} />
-        <Route path="/history" element={<History />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/vehicles" element={<Vehicles />} />
-        <Route path="/favorites" element={<Favorites />} />
-        <Route path="/notifications" element={<Notifications />} />
-        <Route path="/payment-methods" element={<PaymentMethods />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/" element={<Splash />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/map" element={<MapPage />} />
+          <Route path="/history" element={<History />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/vehicles" element={<Vehicles />} />
+          <Route path="/favorites" element={<Favorites />} />
+          <Route path="/notifications" element={<Notifications />} />
+          <Route path="/payment-methods" element={<PaymentMethods />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

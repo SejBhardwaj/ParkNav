@@ -99,20 +99,20 @@ export function GlobePulse({
       if (width === 0 || globe) return
 
       globe = createGlobe(canvas, {
-        devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+        devicePixelRatio: Math.min(window.devicePixelRatio || 1, 1.5), // Cap DPR
         width,
         height: width,
         phi: 0,
         theta: 0.2,
         dark: 1,
         diffuse: 1.5,
-        mapSamples: 20000,
+        mapSamples: 12000, // Reduced from 20000
         mapBrightness: 10,
         baseColor: [0.1, 0.15, 0.3],
         markerColor: [0.2, 0.8, 0.9],
         glowColor: [0.05, 0.1, 0.25],
         markerElevation: 0,
-        markers: markers.map((m) => ({ location: m.location, size: 0.025, id: m.id })),
+        markers: markers.slice(0, 12).map((m) => ({ location: m.location, size: 0.025, id: m.id })), // Limit markers
         arcs: [],
         arcColor: [0.3, 0.85, 0.95],
         arcWidth: 0.5,

@@ -35,8 +35,10 @@ export function BeamsBackground({ className, intensity = "strong", children }: A
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const beamsRef = useRef<Beam[]>([]);
   const animationFrameRef = useRef<number>(0);
-  const MINIMUM_BEAMS = 20;
+  const MINIMUM_BEAMS = 12; // Reduced from 20
   const opacityMap = { subtle: 0.5, medium: 0.65, strong: 0.8 };
+  const lastFrameTime = useRef<number>(0);
+  const FPS_LIMIT = 30; // Limit to 30fps instead of 60fps
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -45,7 +47,7 @@ export function BeamsBackground({ className, intensity = "strong", children }: A
     if (!ctx) return;
 
     const updateCanvasSize = () => {
-      const dpr = window.devicePixelRatio || 1;
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5); // Cap DPR at 1.5
       // Always use full window size so beams cover the entire scrollable page
       const w = window.innerWidth;
       const h = Math.max(window.innerHeight, canvas.parentElement?.scrollHeight || window.innerHeight);
@@ -54,7 +56,7 @@ export function BeamsBackground({ className, intensity = "strong", children }: A
       canvas.style.width = `${w}px`;
       canvas.style.height = `${h}px`;
       ctx.scale(dpr, dpr);
-      beamsRef.current = Array.from({ length: MINIMUM_BEAMS * 1.5 }, () =>
+      beamsRef.current = Array.from({ length: MINIMUM_BEAMS }, () =>
         createBeam(w, h)
       );
     };
@@ -108,24 +110,37 @@ export function BeamsBackground({ className, intensity = "strong", children }: A
       ctx.restore();
     }
 
-    function animate() {
-      if (!canvas || !ctx) return;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.filter = "blur(25px)";
-      const totalBeams = beamsRef.current.length;
-      beamsRef.current.forEach((beam, index) => {
-        beam.y -= beam.speed;
-        beam.pulse += beam.pulseSpeed;
-        const h = parseInt(canvas.style.height);
-        if (beam.y + beam.length < -100) resetBeam(beam, index, totalBeams);
-        // recycle from bottom when beam exits top
-        if (beam.y < -beam.length - 100) {
-          beam.y = h + 100;
+      function animate() {
+        animationFrameRef.current = requestAnimationFrame(animateFrame);
+      }
+      
+      function animateFrame(currentTime: number) {
+        if (!canvas || !ctx) return;
+        
+        // Throttle to target FPS
+        const elapsed = currentTime - lastFrameTime.current;
+        if (elapsed < 1000 / FPS_LIMIT) {
+          animationFrameRef.current = requestAnimationFrame(animateFrame);
+          return;
         }
-        drawBeam(ctx, beam);
-      });
-      animationFrameRef.current = requestAnimationFrame(animate);
-    }
+        lastFrameTime.current = currentTime;
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.filter = "blur(20px)"; // Reduced blur from 25px
+        const totalBeams = beamsRef.current.length;
+        beamsRef.current.forEach((beam, index) => {
+          beam.y -= beam.speed;
+          beam.pulse += beam.pulseSpeed;
+          const h = parseInt(canvas.style.height);
+          if (beam.y + beam.length < -100) resetBeam(beam, index, totalBeams);
+          // recycle from bottom when beam exits top
+          if (beam.y < -beam.length - 100) {
+            beam.y = h + 100;
+          }
+          drawBeam(ctx, beam);
+        });
+        animationFrameRef.current = requestAnimationFrame(animateFrame);
+      }
 
     animate();
     return () => {
@@ -145,8 +160,8 @@ export function BeamsBackground({ className, intensity = "strong", children }: A
       <motion.div
         className="absolute inset-0 bg-neutral-950/10 pointer-events-none"
         style={{ zIndex: 1 }}
-        animate={{ opacity: [0.05, 0.12, 0.05] }}
-        transition={{ duration: 10, ease: "easeInOut", repeat: Number.POSITIVE_INFINITY }}
+        animate={{ opacity: [0.05, 0.1, 0.05] }}
+        transition={{ duration: 8, ease: "easeInOut", repeat: Number.POSITIVE_INFINITY }}
       />
       <div className="relative w-full" style={{ zIndex: 2 }}>
         {children}

@@ -12,9 +12,6 @@ export const parkingTestimonials = [
   { tempId: 2, testimonial: "Saved me 20 minutes every day in Connaught Place! ParkNav is a game-changer for Delhi commuters.", by: "Rahul Sharma, Daily Commuter", imgSrc: "https://i.pravatar.cc/150?img=3" },
   { tempId: 3, testimonial: "The real-time availability feature is incredible. I can see exactly how many spots are left before I even leave home.", by: "Arjun Kapoor, Weekend Shopper", imgSrc: "https://i.pravatar.cc/150?img=4" },
   { tempId: 4, testimonial: "As someone who drives to meetings all day, ParkNav has made my life so much easier.", by: "Neha Singh, Startup Founder", imgSrc: "https://i.pravatar.cc/150?img=5" },
-  { tempId: 5, testimonial: "SO SO SO HAPPY WE FOUND THIS APP! I'd bet it's saved me 100 hours of circling so far.", by: "Jeremy, Product Manager", imgSrc: "https://i.pravatar.cc/150?img=6" },
-  { tempId: 6, testimonial: "Took some convincing, but now that we're on ParkNav, we're never going back.", by: "Pam, Marketing Director", imgSrc: "https://i.pravatar.cc/150?img=7" },
-  { tempId: 7, testimonial: "The EV charging finder alone is worth it. Finally an app that thinks about electric vehicle owners.", by: "Daniel, EV Driver", imgSrc: "https://i.pravatar.cc/150?img=8" },
 ];
 
 interface TestimonialCardProps {
